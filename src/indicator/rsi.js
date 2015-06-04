@@ -16,7 +16,7 @@ module.exports = function(indicatorMixin, accessor_ohlc, indicator_ema) {  // In
       return data.map(function(d, i) {
         if(i < 1) return datum(p.accessor.d(d));
 
-        var difference = p.accessor(d) - p.accessor(data[i-1]),
+        var difference = p.accessor(d) - p.accessor(data.getItem && data.getItem(i-1) || !data.getItem && data[i-1]),
             averageGain = gainAverage.average(Math.max(difference, 0)),
             averageLoss = Math.abs(lossAverage.average(Math.min(difference, 0)));
 
@@ -28,6 +28,19 @@ module.exports = function(indicatorMixin, accessor_ohlc, indicator_ema) {  // In
 
       }).filter(function(d) { return d.rsi !== null; });
     }
+
+      indicator.state = function(_) {
+          if(_) {
+              lossAverage.state(_.lossAverage);
+              gainAverage.state(_.gainAverage);
+          }
+          else {
+              return {
+                  lossAverage: lossAverage.state(),
+                  gainAverage: gainAverage.state()
+              };
+          }
+      };
 
     indicator.overbought = function(_) {
       if (!arguments.length) return overbought;

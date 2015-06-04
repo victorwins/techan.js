@@ -19,6 +19,28 @@ module.exports = function(indicatorMixin, accessor_ohlc) {  // Injected dependen
       return indicator;
     };
 
+      indicator.init = function() {
+          total = 0;
+          samples = [];
+          currentIndex = 0;
+          return indicator;
+      };
+
+    indicator.state = function(_) {
+        if(_) {
+            samples = _.samples;
+            currentIndex = _.currentIndex;
+            total = _.total;
+        }
+        else {
+            return {
+                samples: samples,
+                currentIndex: currentIndex,
+                total: total
+            };
+        }
+    };
+
     function ma(d, i) {
       var value = indicator.average(p.accessor(d));
       if (i+1 < p.period) value = null;

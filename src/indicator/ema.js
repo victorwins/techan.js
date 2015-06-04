@@ -21,7 +21,25 @@ module.exports = function(indicatorMixin, accessor_ohlc, alpha_init) {  // Injec
       return indicator;
     };
 
-    function ma(d, i) {
+      indicator.state = function(_) {
+          if(_) {
+              previous = _.previous;
+              alpha = _.alpha;
+              initialTotal = _.initialTotal;
+              initialCount = _.initialCount;
+          }
+          else {
+              return {
+                  previous: previous,
+                  alpha: alpha,
+                  initialTotal: initialTotal,
+                  initialCount: initialCount
+              };
+          }
+      };
+
+
+      function ma(d, i) {
       var value = indicator.average(p.accessor(d));
       if (i+1 < p.period) {
         value = null;

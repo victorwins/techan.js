@@ -120,36 +120,6 @@ module.exports = function(grunt) {
       }
     },
 
-    karma: {
-      options: {
-        configFile: 'karma.conf.js',
-        files: ['bower_components/d3/d3.js', 'test/spec/common/**/*.js']
-      },
-      watch: {
-        background: true,
-        singleRun: false,
-        options: {
-          files: ['<%= karma.options.files %>', '<%= watchify.test.dest %>'] // Single browserify bundle that includes src under test
-        }
-      },
-      test: {
-        //background: true,
-        options: {
-          files: ['<%= karma.options.files %>', '<%= watchify.test.dest %>'] // Single browserify bundle that includes src under test
-        }
-      },
-      dist: {
-        options: {
-          files: ['<%= karma.options.files %>', '<%= browserify.dist.dest %>', 'test/spec/standalone/**/*.js']
-        }
-      },
-      minify: {
-        options: {
-          files: ['<%= karma.options.files %>', '<%= uglify.dist.dest %>', 'test/spec/standalone/**/*.js']
-        }
-      }
-    },
-
     uglify: {
       options: {
         banner: '<%= config.banner %>',
@@ -219,12 +189,12 @@ module.exports = function(grunt) {
   grunt.loadTasks('lib/grunt');
 
   grunt.registerTask('lint', ['newer:jshint', 'newer:jscs']);
-  grunt.registerTask('dev', ['lint', 'watchify:dev', 'watchify:test', 'karma:watch:run']);
-  grunt.registerTask('test', ['lint', 'watchify:dev', 'watchify:test', 'karma:test']);
+  grunt.registerTask('dev', ['lint', 'watchify:dev', 'watchify:test']);
+  grunt.registerTask('test', ['lint', 'watchify:dev', 'watchify:test']);
   grunt.registerTask('examples', ['newer:replace', 'newer:copy']);
-  grunt.registerTask('dist', ['browserify:dist', 'usebanner', 'karma:dist']);
-  grunt.registerTask('minify', ['uglify', 'karma:minify']);
-  grunt.registerTask('serve', ['bower', 'clean', 'filegen:version', 'examples', 'test', 'connect', 'karma:watch:start', 'watch']);
+  grunt.registerTask('dist', ['browserify:dist', 'usebanner']);
+  grunt.registerTask('minify', ['uglify']);
+  grunt.registerTask('serve', ['bower', 'clean', 'filegen:version', 'examples', 'test', 'connect', 'watch']);
   grunt.registerTask('release:pre', ['bump-only:prerelease', 'default']);
   grunt.registerTask('release:minor', ['bump-only:minor', 'default', 'bump-commit']);
   grunt.registerTask('release:major', ['bump-only:major', 'default', 'bump-commit']);

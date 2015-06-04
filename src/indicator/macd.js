@@ -31,7 +31,22 @@ module.exports = function(indicatorMixin, accessor_ohlc, indicator_ema) {  // In
       }).filter(function(d) { return d.macd !== null; });
     }
 
-    indicator.fast = function(_) {
+      indicator.state = function(_) {
+          if(_) {
+              signalLine.state(_.signalLine);
+              fastAverage.state(_.fastAverage);
+              slowAverage.state(_.slowAverage);
+          }
+          else {
+              return {
+                  signalLine: signalLine.state(),
+                  fastAverage: fastAverage.state(),
+                  slowAverage: slowAverage.state()
+              };
+          }
+      };
+
+      indicator.fast = function(_) {
       if (!arguments.length) return fast;
       fast = _;
       return indicator;

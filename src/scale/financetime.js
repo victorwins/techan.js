@@ -1,5 +1,7 @@
 'use strict';
 
+var lodash = require("lodash");
+
 /*
  Finance time scale which is not necessarily continuous, is required to be plot continuous. Finance scale
  generally contains data points on days where a market is open but no points when closed, such as weekday
@@ -76,8 +78,8 @@ module.exports = function(d3_scale_linear, d3_time, d3_bisect, techan_util_rebin
      * @returns {*}
      */
     scale.domain = function(_) {
+      var visible = index.domain();
       if (!arguments.length) {
-        var visible = index.domain();
 
         if(visible[0] < 0 && visible[visible.length-1] < 0) return []; // if it's all negative return empty, nothing is visible
 
@@ -88,8 +90,16 @@ module.exports = function(d3_scale_linear, d3_time, d3_bisect, techan_util_rebin
         return domain.slice(visible[0], visible[visible.length-1]+1); // Grab visible domain, inclusive
       }
 
+        var newVisibleDomain;
+
+        if(domain && domain.length > 40) {
+            var headIndex = lodash.sortedIndex(_, domain[0]);
+            newVisibleDomain = [visible[0] + headIndex,
+                                visible[1] + headIndex];
+        }
+
       domain = _;
-      return applyDomain();
+      return applyDomain(newVisibleDomain);
     };
 
     function zoomed() {
@@ -101,9 +111,9 @@ module.exports = function(d3_scale_linear, d3_time, d3_bisect, techan_util_rebin
       dateIndexMap = lookupIndex(domain);
     }
 
-    function applyDomain() {
+    function applyDomain(newVisibleDomain) {
       domainMap();
-      index.domain([0, domain.length-1]);
+      index.domain(newVisibleDomain || [0, domain.length-1]);
       zoomed();
       // Apply outerPadding and widen the outer edges by pulling the domain in to ensure start and end bands are fully visible
       index.domain(index.range().map(scale_widen(outerPadding, band)).map(index.invert));
@@ -212,7 +222,7 @@ module.exports = function(d3_scale_linear, d3_time, d3_bisect, techan_util_rebin
       intraDayFormat = d3_time.format.multi([
         [":%S", function(d) { return d.getSeconds(); }],
         ["%I:%M", function(d) { return d.getMinutes(); }],
-        ["%I %p", function(d) { return d.getHours(); }]
+        ["%I %p", function(d) { return true; }]
       ]),
       genericTickMethod = [d3_time.second, 1, d3_time.format.multi([
           [":%S", function(d) { return d.getSeconds(); }],

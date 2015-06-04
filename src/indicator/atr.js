@@ -25,7 +25,25 @@ module.exports = function(indicatorMixin, accessor_ohlc, indicator_sma) {  // In
       return indicator;
     };
 
-    indicator.atr = function(d) {
+      indicator.state = function(_) {
+          if(_) {
+              initialAtr.state(_.initialAtr);
+              previous = _.previous;
+              averageTrueRange = _.averageTrueRange;
+              currentIndex = _.currentIndex;
+          }
+          else {
+              return {
+                  initialAtr: initialAtr.state(),
+                  previous: previous,
+                  averageTrueRange: averageTrueRange,
+                  currentIndex: currentIndex
+              };
+          }
+      };
+
+
+      indicator.atr = function(d) {
       var trueRange = previous === null ? p.accessor.h(d)-p.accessor.l(d) :
         Math.max(p.accessor.h(d)-p.accessor.l(d),
           Math.abs(p.accessor.h(d)-p.accessor.c(previous)),
