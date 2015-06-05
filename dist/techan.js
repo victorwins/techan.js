@@ -13345,6 +13345,7 @@ module.exports = function(d3_svg_axis, accessor_value, plot, plotMixin) {  // In
     var p = {},
         axis = d3_svg_axis(),
         format,
+        wireLength,
         point = 4,
         height = 14,
         width = 50,
@@ -13359,7 +13360,7 @@ module.exports = function(d3_svg_axis, accessor_value, plot, plotMixin) {  // In
 
     annotation.refresh = function(g) {
       var fmt = format ? format : (axis.tickFormat() ? axis.tickFormat() : axis.scale().tickFormat());
-      refresh(g, plot, p.accessor, axis, fmt, height, width, point, translate);
+      refresh(g, plot, p.accessor, axis, fmt, height, width, wireLength, point, translate);
     };
 
     annotation.axis = function(_) {
@@ -13386,6 +13387,12 @@ module.exports = function(d3_svg_axis, accessor_value, plot, plotMixin) {  // In
       return annotation;
     };
 
+    annotation.wireLength = function(_) {
+        if(!arguments.length) return wireLength;
+        wireLength = _;
+        return annotation;
+    };
+
     annotation.translate = function(_) {
       if(!arguments.length) return translate;
       translate = _;
@@ -13398,16 +13405,24 @@ module.exports = function(d3_svg_axis, accessor_value, plot, plotMixin) {  // In
   };
 };
 
-function refresh(g, plot, accessor, axis, format, height, width, point, translate) {
-  var neg = axis.orient() === 'left' || axis.orient() === 'top' ? -1 : 1,
-      translateSelection = g.select('g.translate'),
-      dataGroup = plot.groupSelect(translateSelection, filterInvalidValues(accessor, axis.scale()));
-  dataGroup.entry.append('path');
-  dataGroup.entry.append('text');
+function refresh(g, plot, accessor, axis, format, height, width, wireLength, point, translate) {
+    var neg = axis.orient() === 'left' || axis.orient() === 'top' ? -1 : 1,
+        translateSelection = g.select('g.translate'),
+        dataGroup = plot.groupSelect(translateSelection, filterInvalidValues(accessor, axis.scale()));
+    dataGroup.entry.append('path').attr("class", "bg");
+    if (wireLength) {
+        dataGroup.entry.append('path').attr("class", "wire");
+    }
+    dataGroup.entry.append('text');
 
-  translateSelection.attr('transform', 'translate(' + translate[0] + ',' + translate[1] + ')');
-  dataGroup.selection.selectAll('path').attr('d', backgroundPath(accessor, axis, height, width, point, neg));
-  dataGroup.selection.selectAll('text').text(textValue(accessor, format)).call(textAttributes, accessor, axis, neg);
+    translateSelection.attr('transform', 'translate(' + translate[0] + ',' + translate[1] + ')');
+    dataGroup.selection.selectAll('path.bg').attr('d', backgroundPath(accessor, axis, height, width, point, neg));
+    if (wireLength) {
+        if (axis.orient() === 'left' || axis.orient() === 'right') {
+            dataGroup.selection.selectAll('path.wire').attr('d', horizontalPathLine(accessor, axis, wireLength, height, neg));
+        }
+    }
+    dataGroup.selection.selectAll('text').text(textValue(accessor, format)).call(textAttributes, accessor, axis, neg);
 }
 
 function filterInvalidValues(accessor, scale) {
@@ -13461,45 +13476,46 @@ function textValue(accessor, format) {
   };
 }
 
+function horizontalPathLine(accessor, axis, wireLength, height, neg) {
+    return function(d) {
+        if(!d) return "M 0 0";
+        var scale = axis.scale(),
+            value = scale(accessor(d));
+        return ['M', 0, value, 'h', - neg * wireLength].join(' ');
+    };
+}
+
 function backgroundPath(accessor, axis, height, width, point, neg) {
   return function(d) {
     var scale = axis.scale(),
         value = scale(accessor(d)),
         pt = point;
 
+    var radius = 4;
+    var tickSize = Math.max(0, axis.innerTickSize()) + axis.tickPadding();
+
     switch(axis.orient()) {
       case 'left':
       case 'right':
-        var h = 0;
-
-        if(height/2 < point) pt = height/2;
-        else h = height/2-point;
-
-        return [
-          'M', 0, value,
-          'l', neg*axis.innerTickSize(), -pt,
-          'l', 0, -h,
-          'l', neg*width, 0,
-          'l', 0, height,
-          'l', neg*-width, 0,
-          'l', 0, -h
-        ].join(' ');
+          return "M" + 0 + "," + value  +
+              " v" + neg * (-height / 2) +
+              " h" + neg * (width + tickSize) +
+              " a" + radius + "," + radius + " 0 0 1 " + neg * radius + "," + neg * radius +
+              " v" + neg * (height - 2 * radius) +
+              " a" + radius + "," + radius + " 0 0 1 " + - neg * radius + "," + neg * radius +
+              " h" + neg * (-tickSize - width) +
+              " z";
       case 'top':
       case 'bottom':
-        var w = 0;
+        return "M" + value  + ",0" +
+              " h" + (width / 2) +
+              " v" + (height + tickSize - radius) +
+              " a" + radius + "," + radius + " 0 0 1 " + - radius + "," + radius +
+              " h" + (- width + 2 * radius) +
+              " a" + radius + "," + radius + " 0 0 1 " + - radius + "," + - radius +
+              " v" + (- tickSize - height + radius) +
+              " z";
 
-        if(width/2 < point) pt = width/2;
-        else w = width/2-point;
-
-        return [
-          'M', value, 0,
-          'l', -pt, neg*axis.innerTickSize(),
-          'l', -w, 0,
-          'l', 0, neg*height,
-          'l', width, 0,
-          'l', 0, neg*-height,
-          'l', -w, 0
-        ].join(' ');
       default: throw "Unsupported axis.orient() = " + axis.orient();
     }
   };
