@@ -6,7 +6,7 @@ module.exports = function(d3) {
       plot = require('./plot')(d3.svg.line, d3.select),
       plotMixin = require('./plotmixin')(d3.scale.linear, scale.financetime),
       line = require('./line'),
-      axisannotation = require('./axisannotation')(d3.svg.axis, accessor.value, plot, plotMixin);
+      axisannotation = require('./axisannotation')(d3.behavior.drag, d3_event, d3.svg.axis, accessor.value, plot, d3.dispatch, plotMixin);
 
   return {
     atr: line(accessor.value, plot, plotMixin),

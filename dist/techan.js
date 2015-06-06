@@ -13340,7 +13340,7 @@ function refresh(g, upLine, downLine) {
 /**
  * TODO Refactor this to techan.plot.annotation.axis()?
  */
-module.exports = function(d3_svg_axis, accessor_value, plot, plotMixin) {  // Injected dependencies
+module.exports = function(d3_behavior_drag, d3_event, d3_svg_axis, accessor_value, plot, d3_dispatch, plotMixin) {  // Injected dependencies
   return function() { // Closure function
     var p = {},
         axis = d3_svg_axis(),
@@ -13349,10 +13349,15 @@ module.exports = function(d3_svg_axis, accessor_value, plot, plotMixin) {  // In
         point = 4,
         height = 14,
         width = 50,
+        text,
+        actionText,
+        action,
+        dragAction,
+        dispatch = d3_dispatch('mouseenter', 'mouseout', 'mousemove', 'drag', 'dragstart', 'dragend'),
         translate = [0, 0];
 
     function annotation(g) {
-      g.selectAll('g.translate').data(plot.dataMapper.array).enter()
+      var gTranslate = g.selectAll('g.translate').data(plot.dataMapper.array).enter()
         .append('g').attr('class', 'translate');
 
       annotation.refresh(g);
@@ -13360,7 +13365,7 @@ module.exports = function(d3_svg_axis, accessor_value, plot, plotMixin) {  // In
 
     annotation.refresh = function(g) {
       var fmt = format ? format : (axis.tickFormat() ? axis.tickFormat() : axis.scale().tickFormat());
-      refresh(g, plot, p.accessor, axis, fmt, height, width, wireLength, point, translate);
+      refresh(g, plot, p.accessor, axis, fmt, height, width, wireLength, text, actionText, action, dispatch, point, translate);
     };
 
     annotation.axis = function(_) {
@@ -13393,36 +13398,99 @@ module.exports = function(d3_svg_axis, accessor_value, plot, plotMixin) {  // In
         return annotation;
     };
 
+      annotation.action = function(_, _2) {
+          if(!arguments.length) return actionText;
+          actionText = _;
+          action = _2;
+          return annotation;
+      };
+
+      annotation.text = function(_) {
+          if(!arguments.length) return text;
+          text = _;
+          return annotation;
+      };
+
+      annotation.drag = function(g) {
+        g.selectAll('.draghandle path')
+            .call(dragBody(dispatch, p.accessor, axis.scale(), function() {
+                annotation.refresh(g);
+            }));
+      };
+
     annotation.translate = function(_) {
       if(!arguments.length) return translate;
       translate = _;
       return annotation;
     };
 
-    plotMixin(annotation, p).accessor(accessor_value());
+      function dragBody(dispatch, accessor, y, refresher) {
+          var drag = d3_behavior_drag().origin(function(d) {
+              return { x: 0, y: y(accessor(d)) };
+          }).on('drag', function(d) {
+              var ev = d3_event();
+              var value = y.invert(ev.y);
+              var dd = {};
+              accessor.v(dd, value);
+              dispatch.drag(dd);
+          });
+          return plot.interaction.dragStartEndDispatch(drag, dispatch);
+      }
+
+      plotMixin(annotation, p).accessor(accessor_value()).on(dispatch);
 
     return annotation;
   };
 };
 
-function refresh(g, plot, accessor, axis, format, height, width, wireLength, point, translate) {
+function refresh(g, plot, accessor, axis, format, height, width, wireLength, text, buttonText, buttonAction, dispatch, point, translate) {
     var neg = axis.orient() === 'left' || axis.orient() === 'top' ? -1 : 1,
         translateSelection = g.select('g.translate'),
         dataGroup = plot.groupSelect(translateSelection, filterInvalidValues(accessor, axis.scale()));
-    dataGroup.entry.append('path').attr("class", "bg");
+
     if (wireLength) {
         dataGroup.entry.append('path').attr("class", "wire");
     }
-    dataGroup.entry.append('text');
+
+    if(text !== "") {
+        dataGroup.entry.append('path').attr("class", "bg");
+        dataGroup.entry.append('text').attr("class", "label");
+        var dragHandle = dataGroup.entry.append('g').attr('class', 'draghandle').style({ opacity: 0, fill: 'none' })
+            .call(plot.interaction.mousedispatch(dispatch));
+        dragHandle.append('path').style({'pointer-events': 'all'});
+    }
+
+    if(buttonText) {
+        dataGroup.entry.append('rect').attr("class", "button");
+        dataGroup.entry.append('text').attr("class", "button");
+        var interaction = dataGroup.entry.append('g').attr('class', 'interaction').style({ opacity: 0, fill: 'none' })
+            .call(plot.interaction.mousedispatch(dispatch));
+        interaction.append('rect').style({'pointer-events': 'all'});
+    }
 
     translateSelection.attr('transform', 'translate(' + translate[0] + ',' + translate[1] + ')');
-    dataGroup.selection.selectAll('path.bg').attr('d', backgroundPath(accessor, axis, height, width, point, neg));
     if (wireLength) {
         if (axis.orient() === 'left' || axis.orient() === 'right') {
             dataGroup.selection.selectAll('path.wire').attr('d', horizontalPathLine(accessor, axis, wireLength, height, neg));
         }
     }
-    dataGroup.selection.selectAll('text').text(textValue(accessor, format)).call(textAttributes, accessor, axis, neg);
+    if(text !== "") {
+        dataGroup.selection.selectAll('path.bg').
+            attr('d', backgroundPath(accessor, axis, height, width, point, neg));
+        dataGroup.selection.selectAll('text.label').text(text || textValue(accessor, format)).
+            call(textAttributes, accessor, axis, neg);
+        dataGroup.selection.selectAll('.draghandle path').
+            attr('d', backgroundPath(accessor, axis, height, width, point, neg));
+    }
+    if(buttonText) {
+        dataGroup.selection.selectAll('rect.button').
+            call(closeButtonAttributes, accessor, axis, neg, height);
+        dataGroup.selection.selectAll('text.button').text(buttonText).
+            call(closeTextAttributes, accessor, axis, neg, height);
+        dataGroup.selection.selectAll('.interaction rect').
+            on("mousedown", buttonAction).
+            call(closeButtonAttributes, accessor, axis, neg, height);
+    }
 }
 
 function filterInvalidValues(accessor, scale) {
@@ -13464,6 +13532,49 @@ function textAttributes(text, accessor, axis, neg) {
   }
 }
 
+function closeTextAttributes(text, accessor, axis, neg, dimension) {
+    var scale = axis.scale();
+
+    switch(axis.orient()) {
+        case 'left':
+        case 'right':
+            text.attr({
+                x: - neg*dimension / 2,
+                y: textPosition(accessor, scale),
+                dy: '.32em'
+            }).style('text-anchor', 'middle');
+            break;
+        case 'top':
+        case 'bottom':
+            break; // TODO
+    }
+}
+
+function closeButtonAttributes(rect, accessor, axis, neg, dimension) {
+    var scale = axis.scale();
+
+    switch(axis.orient()) {
+        case 'left':
+        case 'right':
+            rect.attr({
+                x: - neg*dimension,
+                y: buttonPosition(accessor, scale, dimension),
+                width: dimension - 1,
+                height: dimension
+            });
+            break;
+        case 'top':
+        case 'bottom':
+            break; // TODO
+    }
+}
+
+function buttonPosition(accessor, scale, dimension) {
+    return function(d) {
+        return scale(accessor(d)) - dimension / 2;
+    };
+}
+
 function textPosition(accessor, scale) {
   return function(d) {
     return scale(accessor(d));
@@ -13497,7 +13608,7 @@ function backgroundPath(accessor, axis, height, width, point, neg) {
     switch(axis.orient()) {
       case 'left':
       case 'right':
-          return "M" + 0 + "," + value  +
+          return "M" + neg + "," + value  +
               " v" + neg * (-height / 2) +
               " h" + neg * (width + tickSize) +
               " a" + radius + "," + radius + " 0 0 1 " + neg * radius + "," + neg * radius +
@@ -13520,6 +13631,26 @@ function backgroundPath(accessor, axis, height, width, point, neg) {
     }
   };
 }
+
+function buttonBackgroundPath(accessor, axis, dimension, neg) {
+    return function(d) {
+        var scale = axis.scale(),
+            value = scale(accessor(d));
+        switch(axis.orient()) {
+            case 'left':
+            case 'right':
+                return "M" + -neg + "," + value  +
+                    " v" + neg * (-dimension / 2) +
+                    " h" + neg * (-dimension) +
+                    " v" + neg * dimension +
+                    " h" + neg * dimension +
+                    " z";
+            default: throw "Unsupported axis.orient() = " + axis.orient();
+        }
+    };
+}
+
+
 },{}],23:[function(require,module,exports){
 'use strict';
 
@@ -13859,7 +13990,7 @@ module.exports = function(d3) {
       plot = require('./plot')(d3.svg.line, d3.select),
       plotMixin = require('./plotmixin')(d3.scale.linear, scale.financetime),
       line = require('./line'),
-      axisannotation = require('./axisannotation')(d3.svg.axis, accessor.value, plot, plotMixin);
+      axisannotation = require('./axisannotation')(d3.behavior.drag, d3_event, d3.svg.axis, accessor.value, plot, d3.dispatch, plotMixin);
 
   return {
     atr: line(accessor.value, plot, plotMixin),
