@@ -93,9 +93,10 @@ module.exports = function(d3_scale_linear, d3_time, d3_bisect, techan_util_rebin
         var newVisibleDomain;
 
         if(domain && domain.length > 40) {
-            var headIndex = lodash.sortedIndex(_, domain[0]);
-            newVisibleDomain = [visible[0] + headIndex,
-                                visible[1] + headIndex];
+            var rightPos = domain[Math.min(domain.length-1, Math.round(visible[1]))];
+            var newRightIndex = lodash.sortedIndex(_, rightPos);
+            newVisibleDomain = [newRightIndex - (visible[1] - visible[0]),
+                                newRightIndex];
         }
 
       domain = _;

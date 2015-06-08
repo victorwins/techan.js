@@ -14269,6 +14269,9 @@ module.exports = function(d3_svg_line, d3_select) {
 
     horizontalPathLine: function(accessor_date, x, accessor_value, y) {
       return function(d) {
+          if(d.length === 0) {
+              return "M0,0";
+          }
         var firstDatum = d[0],
             lastDatum = d[d.length-1];
 
@@ -14839,9 +14842,10 @@ module.exports = function(d3_scale_linear, d3_time, d3_bisect, techan_util_rebin
         var newVisibleDomain;
 
         if(domain && domain.length > 40) {
-            var headIndex = lodash.sortedIndex(_, domain[0]);
-            newVisibleDomain = [visible[0] + headIndex,
-                                visible[1] + headIndex];
+            var rightPos = domain[Math.min(domain.length-1, Math.round(visible[1]))];
+            var newRightIndex = lodash.sortedIndex(_, rightPos);
+            newVisibleDomain = [newRightIndex - (visible[1] - visible[0]),
+                                newRightIndex];
         }
 
       domain = _;

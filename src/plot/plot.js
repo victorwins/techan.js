@@ -92,6 +92,9 @@ module.exports = function(d3_svg_line, d3_select) {
 
     horizontalPathLine: function(accessor_date, x, accessor_value, y) {
       return function(d) {
+          if(d.length === 0) {
+              return "M0,0";
+          }
         var firstDatum = d[0],
             lastDatum = d[d.length-1];
 
