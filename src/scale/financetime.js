@@ -70,6 +70,13 @@ module.exports = function(d3_scale_linear, d3_time, d3_bisect, techan_util_rebin
       return Math.round(index.invert(y));
     };
 
+      scale.visibleRange = function() {
+          var visible = index.domain();
+          visible[0] = Math.floor(visible[0]);
+          visible[1] = Math.ceil(visible[1]);
+          return visible;
+      };
+
     /**
      * As the underlying structure relies on a full array, ensure the full domain is passed here,
      * not just min and max values.
@@ -77,7 +84,8 @@ module.exports = function(d3_scale_linear, d3_time, d3_bisect, techan_util_rebin
      * @param _ The full domain array
      * @returns {*}
      */
-    scale.domain = function(_) {
+    scale.domain = function(_, rightOffset, barRange) {
+        barRange = null;
       var visible = index.domain();
       if (!arguments.length) {
 
@@ -95,7 +103,11 @@ module.exports = function(d3_scale_linear, d3_time, d3_bisect, techan_util_rebin
         if(domain && domain.length > 40) {
             var rightPos = domain[Math.min(domain.length-1, Math.round(visible[1]))];
             var newRightIndex = lodash.sortedIndex(_, rightPos);
-            newVisibleDomain = [newRightIndex - (visible[1] - visible[0]),
+            console.log("Apply new domain: ", rightOffset, newRightIndex);
+            if(rightOffset >= 0) {
+                newRightIndex += rightOffset + (Math.max(_.length, domain.length) - newRightIndex) + 1;
+            }
+            newVisibleDomain = [newRightIndex - (barRange || (visible[1] - visible[0])),
                                 newRightIndex];
         }
 

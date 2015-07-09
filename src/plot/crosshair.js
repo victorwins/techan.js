@@ -3,7 +3,7 @@
 module.exports = function(d3_select, d3_event, d3_mouse, d3_dispatch, plot, plotMixin) { // Injected dependencies
   return function() { // Closure function
     var p = {},  // Container for private, direct access mixed in variables
-        dispatch = d3_dispatch('enter', 'out', 'move'),
+        dispatch = d3_dispatch('enter', 'out', 'move', 'mousedown', 'mouseup'),
         xAnnotation = [],
         yAnnotation = [],
         verticalWireRange,
@@ -52,12 +52,25 @@ module.exports = function(d3_select, d3_event, d3_mouse, d3_dispatch, plot, plot
           display(g, 'none');
           dispatch.out();
         })
+        .on('mousedown', function() {
+              dispatch.mousedown(coordinates(this));
+          })
+        .on('mouseup', function() {
+              dispatch.mouseup(coordinates(this));
+          })
         .on('mousemove', mousemoveRefresh(pathVerticalSelection, pathHorizontalSelection,
           xAnnotationSelection, yAnnotationSelection)
         );
 
       refresh(pathVerticalSelection, pathHorizontalSelection, xAnnotationSelection, yAnnotationSelection);
     };
+
+      function coordinates(ch) {
+          var coords = d3_mouse(ch),
+              x = p.xScale.invert(coords[0]),
+              y = p.yScale.invert(coords[1]);
+          return [x, y, coords];
+      }
 
     function mousemoveRefresh(pathVerticalSelection, pathHorizontalSelection,
                               xAnnotationSelection, yAnnotationSelection) {

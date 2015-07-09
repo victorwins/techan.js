@@ -10,6 +10,8 @@ module.exports = function() {
     ohlc: require('./ohlc'),
     rsi: require('./rsi'),
     trendline: require('./trendline'),
+    horizontalline: require('./horizontalline'),
+    verticalline: require('./verticalline'),
     value: require('./value'),
     volume: require('./volume')
   };

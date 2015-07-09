@@ -3,7 +3,7 @@
 module.exports = function(d3_behavior_drag, d3_event, d3_select, d3_dispatch, accessor_trendline, plot, plotMixin) {  // Injected dependencies
   function Trendline() { // Closure function
     var p = {},  // Container for private, direct access mixed in variables
-        dispatch = d3_dispatch('mouseenter', 'mouseout', 'mousemove', 'drag', 'dragstart', 'dragend');
+        dispatch = d3_dispatch('mouseenter', 'mouseout', 'mousemove', 'drag', 'dragstart', 'dragend', 'dblclick');
 
     function trendline(g) {
       var group = plot.groupSelect(g, plot.dataMapper.unity),
@@ -15,6 +15,7 @@ module.exports = function(d3_behavior_drag, d3_event, d3_select, d3_dispatch, ac
 
       var interaction = group.entry.append('g').attr('class', 'interaction').style({ opacity: 0, fill: 'none' })
         .call(plot.interaction.mousedispatch(dispatch));
+      interaction.on("dblclick", function(d) { dispatch.dblclick(d); });
 
       interaction.append('path').attr('class', 'body').style('stroke-width', 16);
       interaction.append('circle').attr({ class: 'start', r: 8 });

@@ -14,15 +14,15 @@ module.exports = function(indicatorMixin, accessor_ohlc, alpha_init) {  // Injec
     }
 
     indicator.init = function() {
-      previous = null;
-      alpha = alpha_init(p.period);
-      initialTotal = 0;
-      initialCount = 0;
-      return indicator;
+        previous = null;
+        alpha = alpha_init(p.period);
+        initialTotal = 0;
+        initialCount = 0;
+        return indicator;
     };
 
-      indicator.state = function(_) {
-          if(_) {
+    indicator.state = function(_) {
+        if(_) {
               previous = _.previous;
               alpha = _.alpha;
               initialTotal = _.initialTotal;
@@ -38,8 +38,7 @@ module.exports = function(indicatorMixin, accessor_ohlc, alpha_init) {  // Injec
           }
       };
 
-
-      function ma(d, i) {
+    function ma(d, i) {
       var value = indicator.average(p.accessor(d));
       if (i+1 < p.period) {
         value = null;
