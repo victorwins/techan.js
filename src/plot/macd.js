@@ -10,10 +10,10 @@ module.exports = function(accessor_macd, plot, plotMixin) {  // Injected depende
     function macd(g) {
       var group = plot.groupSelect(g, plot.dataMapper.array, p.accessor.d);
 
-      group.selection.append('path').attr('class', 'difference');
+      macd.interaction(group.selection.append('path').attr('class', 'difference'));
       group.selection.append('path').attr('class', 'zero');
-      group.selection.append('path').attr('class', 'macd');
-      group.selection.append('path').attr('class', 'signal');
+      macd.interaction(group.selection.append('path').attr('class', 'macd'));
+      macd.interaction(group.selection.append('path').attr('class', 'signal'));
 
       macd.refresh(g);
     }

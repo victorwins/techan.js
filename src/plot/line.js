@@ -5,12 +5,16 @@ module.exports = function(accessor_value, plot, plotMixin, showZero) {  // Injec
 
   return function() { // Closure function
     var p = {},  // Container for private, direct access mixed in variables
-        svgLine = plot.pathLine();
+        svgLine = plot.pathLine(),
+        path;
 
     function line(g) {
       var group = plot.groupSelect(g, plot.dataMapper.array);
 
-      group.entry.append('path').attr('class', 'line');
+      path = group.entry.append('path').attr('class', 'line');
+      if(line.interaction) {
+          line.interaction(path);
+      }
 
       if(showZero) {
         group.selection.append('path').attr('class', 'zero');

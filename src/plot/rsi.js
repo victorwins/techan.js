@@ -3,7 +3,8 @@
 module.exports = function(accessor_rsi, plot, plotMixin) {  // Injected dependencies
   return function() { // Closure function
     var p = {},  // Container for private, direct access mixed in variables
-        rsiLine = plot.pathLine();
+        rsiLine = plot.pathLine(),
+        interactions = [];
 
     function rsi(g) {
       var group = plot.groupSelect(g, plot.dataMapper.array, p.accessor.d);
@@ -11,7 +12,7 @@ module.exports = function(accessor_rsi, plot, plotMixin) {  // Injected dependen
       group.entry.append('path').attr('class', 'overbought');
       group.entry.append('path').attr('class', 'middle');
       group.entry.append('path').attr('class', 'oversold');
-      group.entry.append('path').attr('class', 'rsi');
+      rsi.interaction(group.entry.append('path').attr('class', 'rsi'));
 
       rsi.refresh(g);
     }

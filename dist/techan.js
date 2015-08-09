@@ -14128,22 +14128,37 @@ module.exports = function(d3) {
       line = require('./line'),
       axisannotation = require('./axisannotation')(d3.behavior.drag, d3_event, d3.svg.axis, accessor.value, plot, d3.dispatch, plotMixin);
 
+    var indicatorPlotMixin = function(source, priv) {
+        var dispatch = d3.dispatch('mouseenter', 'mouseout', 'dblclick');
+        var mixin = plotMixin(source, priv).on(dispatch);
+        source.interaction = function(path) {
+            path = path.style("pointer-events", "all");
+            var withInteraction = path.call(plot.interaction.mousedispatch(dispatch));
+            withInteraction.on("dblclick", function(d) {
+                console.log("dbclclick");
+                dispatch.dblclick(d);
+            }, true);
+            return withInteraction;
+        };
+        return mixin;
+    };
+
   return {
-    atr: line(accessor.value, plot, plotMixin),
-    atrtrailingstop: require('./atrtrailingstop')(accessor.atrtrailingstop, plot, plotMixin),
+    atr: line(accessor.value, plot, indicatorPlotMixin),
+    atrtrailingstop: require('./atrtrailingstop')(accessor.atrtrailingstop, plot, indicatorPlotMixin),
     axisannotation: axisannotation,
     candlestick: require('./candlestick')(d3.scale.linear, d3.extent, accessor.ohlc, plot, plotMixin),
     crosshair: require('./crosshair')(d3.select, d3_event, d3.mouse, d3.dispatch, plot, plotMixin),
-    ema: line(accessor.value, plot, plotMixin),
-    ichimoku: require('./ichimoku')(d3.svg.area, accessor.ichimoku, plot, plotMixin),
+    ema: line(accessor.value, plot, indicatorPlotMixin),
+    ichimoku: require('./ichimoku')(d3.svg.area, accessor.ichimoku, plot, indicatorPlotMixin),
     ohlc: require('./ohlc')(d3.scale.linear, d3.extent, accessor.ohlc, plot, plotMixin),
     close: line(accessor.ohlc, plot, plotMixin),
     volume: require('./volume')(accessor.volume, plot, plotMixin),
-    rsi: require('./rsi')(accessor.rsi, plot, plotMixin),
-    macd: require('./macd')(accessor.macd, plot, plotMixin),
-    momentum: line(accessor.value, plot, plotMixin, true),
-    moneyflow: line(accessor.value, plot, plotMixin, true),
-    sma: line(accessor.value, plot, plotMixin),
+    rsi: require('./rsi')(accessor.rsi, plot, indicatorPlotMixin),
+    macd: require('./macd')(accessor.macd, plot, indicatorPlotMixin),
+    momentum: line(accessor.value, plot, indicatorPlotMixin, true),
+    moneyflow: line(accessor.value, plot, indicatorPlotMixin, true),
+    sma: line(accessor.value, plot, indicatorPlotMixin),
     supstance: require('./supstance')(d3.behavior.drag, d3_event, d3.select, d3.dispatch, accessor.value, plot, plotMixin),
     trendline: require('./trendline')(d3.behavior.drag, d3_event, d3.select, d3.dispatch, accessor.trendline, plot, plotMixin),
     wilderma: line(accessor.value, plot, plotMixin),
@@ -14162,12 +14177,16 @@ module.exports = function(accessor_value, plot, plotMixin, showZero) {  // Injec
 
   return function() { // Closure function
     var p = {},  // Container for private, direct access mixed in variables
-        svgLine = plot.pathLine();
+        svgLine = plot.pathLine(),
+        path;
 
     function line(g) {
       var group = plot.groupSelect(g, plot.dataMapper.array);
 
-      group.entry.append('path').attr('class', 'line');
+      path = group.entry.append('path').attr('class', 'line');
+      if(line.interaction) {
+          line.interaction(path);
+      }
 
       if(showZero) {
         group.selection.append('path').attr('class', 'zero');
@@ -14212,10 +14231,10 @@ module.exports = function(accessor_macd, plot, plotMixin) {  // Injected depende
     function macd(g) {
       var group = plot.groupSelect(g, plot.dataMapper.array, p.accessor.d);
 
-      group.selection.append('path').attr('class', 'difference');
+      macd.interaction(group.selection.append('path').attr('class', 'difference'));
       group.selection.append('path').attr('class', 'zero');
-      group.selection.append('path').attr('class', 'macd');
-      group.selection.append('path').attr('class', 'signal');
+      macd.interaction(group.selection.append('path').attr('class', 'macd'));
+      macd.interaction(group.selection.append('path').attr('class', 'signal'));
 
       macd.refresh(g);
     }
@@ -14591,7 +14610,8 @@ module.exports = function(d3_scale_linear, techan_scale_financetime) {
 module.exports = function(accessor_rsi, plot, plotMixin) {  // Injected dependencies
   return function() { // Closure function
     var p = {},  // Container for private, direct access mixed in variables
-        rsiLine = plot.pathLine();
+        rsiLine = plot.pathLine(),
+        interactions = [];
 
     function rsi(g) {
       var group = plot.groupSelect(g, plot.dataMapper.array, p.accessor.d);
@@ -14599,7 +14619,7 @@ module.exports = function(accessor_rsi, plot, plotMixin) {  // Injected dependen
       group.entry.append('path').attr('class', 'overbought');
       group.entry.append('path').attr('class', 'middle');
       group.entry.append('path').attr('class', 'oversold');
-      group.entry.append('path').attr('class', 'rsi');
+      rsi.interaction(group.entry.append('path').attr('class', 'rsi'));
 
       rsi.refresh(g);
     }
