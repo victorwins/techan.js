@@ -13958,7 +13958,7 @@ module.exports = function(d3_select, d3_event, d3_mouse, d3_dispatch, plot, plot
           yAnnotationSelection.each(plot.annotation.update(yAnnotation, coords[1]))
         );
 
-        dispatch.move([x, y]);
+        dispatch.move([x, y, coords]);
       };
     }
 
@@ -14129,7 +14129,7 @@ module.exports = function(d3) {
       axisannotation = require('./axisannotation')(d3.behavior.drag, d3_event, d3.svg.axis, accessor.value, plot, d3.dispatch, plotMixin);
 
     var indicatorPlotMixin = function(source, priv) {
-        var dispatch = d3.dispatch('mouseenter', 'mouseout', 'dblclick');
+        var dispatch = d3.dispatch('mouseenter', 'mouseout', 'mousemove', 'dblclick');
         var mixin = plotMixin(source, priv).on(dispatch);
         source.interaction = function(path) {
             path = path.style("pointer-events", "all");
