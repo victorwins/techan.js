@@ -6,6 +6,7 @@ module.exports = function(d3) {
       plot = require('./plot')(d3.svg.line, d3.select),
       plotMixin = require('./plotmixin')(d3.scale.linear, scale.financetime),
       line = require('./line'),
+      multiline = require('./multiline'),
       axisannotation = require('./axisannotation')(d3.behavior.drag, d3_event, d3.svg.axis, accessor.value, plot, d3.dispatch, plotMixin);
 
     var indicatorPlotMixin = function(source, priv) {
@@ -24,6 +25,8 @@ module.exports = function(d3) {
     };
 
   return {
+    line: line(accessor.value, plot, indicatorPlotMixin),
+    multiline: function(accessor) { return multiline(accessor, plot, indicatorPlotMixin); },
     atr: line(accessor.value, plot, indicatorPlotMixin),
     atrtrailingstop: require('./atrtrailingstop')(accessor.atrtrailingstop, plot, indicatorPlotMixin),
     axisannotation: axisannotation,

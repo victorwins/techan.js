@@ -102,6 +102,17 @@ module.exports = function(d3) {
       movingaverage: function(data, accessor) {
         accessor = accessor || accessors.value();
         return pathScale(d3, data, accessor);
+      },
+
+      singlePath: function(data, accessor) {
+          accessor = accessor || accessors.value();
+          return pathScale(d3, data, accessor, 0.04);
+      },
+
+      multiPath: function(accessor) {
+          return function(data) {
+              return multiPathScale(d3, data, accessor, 0.04);
+          };
       }
     },
 
@@ -115,9 +126,30 @@ function pathDomain(d3, data, accessor, widening) {
   return data.length > 0 ? d3.extent(data, accessor).map(widen(widening)) : [];
 }
 
+function multiPathDomain(d3, data, accessor, widening) {
+    var fields = accessor.fieldNames;
+    var minmax = d3.extent(data, accessor[fields[0]]);
+    for(var i=1; i<fields.length; ++i) {
+        var t = d3.extent(data, accessor[fields[i]]);
+        if(minmax[0] !== undefined) {
+            minmax[0] = Math.min(minmax[0], t[0]);
+            minmax[1] = Math.max(minmax[1], t[1]);
+        }
+        else {
+            minmax = t;
+        }
+    }
+    return data.length > 0 ? minmax.map(widen(widening)) : [];
+}
+
 function pathScale(d3, data, accessor, widening) {
-  return d3.scale.linear().domain(pathDomain(d3, data, accessor, widening))
-    .range([1, 0]);
+    var domain = pathDomain(d3, data, accessor, widening);
+    return d3.scale.linear().domain(domain).range([1, 0]);
+}
+
+function multiPathScale(d3, data, accessor, widening) {
+    var domain = multiPathDomain(d3, data, accessor, widening);
+    return d3.scale.linear().domain(domain).range([1, 0]);
 }
 
 /**
